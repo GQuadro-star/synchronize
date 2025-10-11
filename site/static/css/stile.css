@@ -1,0 +1,66 @@
+@font-face {
+    font-family: 'Mind Control';
+    src: url('fonts/mind-control.woff2') format('woff2'),
+         url('fonts/mind-control.woff') format('woff'),
+         url('fonts/mind-control.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+body {
+    color: rgb(255, 255, 255);
+    margin: 0px
+    }
+.container
+{
+    font-size: 24px;
+    font-family: Calibri;
+    font-weight: bold;
+}
+.title{
+    font-size: 48px;
+    font-family: 'Mind Control', sans-serif;
+    font-style: oblique;
+    color: rgb(255 ,0 ,255)
+}
+.osnova
+{
+
+
+
+}
+nav
+{
+    border-width: 10px;
+    border-color: rgb(255 ,255 ,255)
+
+}
+.black
+{
+    transition-duration: 1s;
+    background-color: rgb(30 ,31 ,34);
+    color: rgb(255 ,255 ,255)
+}
+.wight
+{
+    transition-duration: 1s;
+    background-color: rgb(255 ,255 ,255);
+    color: rgb(0 ,0 ,0)
+}
+a:focus, a:active, a:link {
+    transform: scale(1);
+    transition:  0.3s ;
+  }
+a:hover {
+    transform: scale(1.2);
+    transition:  0.3s ;
+}
+button {
+    transform: scale(1);
+    transition:  0.3s ;
+}
+button:focus, button:active, button:link {
+    transform: scale(1.2);
+    transition:  0.3s ;
+}

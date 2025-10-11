@@ -1,0 +1,17 @@
+{% extends 'base/base.html' %}
+
+{% block main %}
+<div class="osnova">
+  <div class="px-4 py-5 my-5 text-center">
+    <h1 class = "title" class="display-5 fw-bold">Synchronize</h1>
+    <p>сервис для шифровки и расшифровки файлов</p>
+  </div>
+Выберите файл для шифрования:
+<form>
+  {% csrf_token %}
+
+
+</form>
+{% endblock %}
+</div>
+<!--class="display-5 fw-bold text-body-emphasis"-->
