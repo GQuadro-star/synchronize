@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('synchronize', '0003_rename_login1_baza_login_and_more'),
+        ('synchronize', '0003_rename_login1_base_login_and_more'),
     ]
 
     operations = [

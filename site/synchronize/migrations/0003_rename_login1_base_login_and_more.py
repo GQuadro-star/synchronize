@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('synchronize', '0002_baza_name_alter_baza_login1_alter_baza_password1'),
+        ('synchronize', '0002_base_name_alter_base_login1_alter_base_password1'),
     ]
 
     operations = [

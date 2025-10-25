@@ -3,15 +3,21 @@
 {% block main %}
 <div class="osnova">
   <div class="px-4 py-5 my-5 text-center">
-    <h1 class = "title" class="display-5 fw-bold">Synchronize</h1>
+    <h1 class="title display-5 fw-bold">Synchronize</h1>
     <p>сервис для шифровки и расшифровки файлов</p>
   </div>
-Выберите файл для шифрования:
-<form>
-  {% csrf_token %}
 
+  <p>Выберите файл для шифрования:</p>
+  <form method="post" action="{% url 'upload' %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="mb-3">
+      <input class="form-control" type="file" name="file" id="id_file" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Загрузить файл</button>
+  </form>
 
-</form>
-{% endblock %}
+  {% if error %}
+    <div class="alert alert-danger mt-3">{{ error }}</div>
+  {% endif %}
 </div>
-<!--class="display-5 fw-bold text-body-emphasis"-->
+{% endblock %}
