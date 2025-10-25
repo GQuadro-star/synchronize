@@ -4,20 +4,198 @@
 <div class="osnova">
   <div class="px-4 py-5 my-5 text-center">
     <h1 class="title display-5 fw-bold">Synchronize</h1>
-    <p>сервис для шифровки и расшифровки файлов</p>
+    <p>сервис для шифровки и расшифровки файлов (локально в браузере)</p>
   </div>
 
-  <p>Выберите файл для шифрования:</p>
-  <form method="post" action="{% url 'upload' %}" enctype="multipart/form-data">
+  <p>Выберите файл для локальной обработки (файл сначала обрабатывается локально; затем можно отправить результат на сервер):</p>
+
+  <form id="local-form">
     {% csrf_token %}
     <div class="mb-3">
-      <input class="form-control" type="file" name="file" id="id_file" required>
+      <input class="form-control" type="file" id="local-file" name="file" required>
     </div>
-    <button type="submit" class="btn btn-primary">Загрузить файл</button>
+    <button type="submit" class="btn btn-primary" id="process-btn">Обработать локально</button>
+    <button type="button" class="btn btn-success" id="send-btn" style="display:none;margin-left:8px;">Отправить результат на сервер</button>
   </form>
 
-  {% if error %}
-    <div class="alert alert-danger mt-3">{{ error }}</div>
-  {% endif %}
+  <div id="status" class="mt-3"></div>
+  <pre id="output" class="mt-3" style="white-space:pre-wrap;"></pre>
 </div>
+
+<!-- Pyodide: Python в браузере (WebAssembly). Загружается с CDN -->
+<script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+
+<script>
+  // Инициализация pyodide (загрузка WASM)
+  let pyodideReadyPromise = null;
+  async function initPyodideOnce() {
+    if (!pyodideReadyPromise) {
+      document.getElementById('status').innerText = 'Загружаю pyodide (Python в браузере)...';
+      pyodideReadyPromise = loadPyodide({indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/"});
+      window.pyodide = await pyodideReadyPromise;
+      document.getElementById('status').innerText = 'Pyodide загружен. Готово к локальной обработке.';
+    } else {
+      await pyodideReadyPromise;
+    }
+  }
+
+  function readFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => { reader.abort(); reject(new DOMException("Ошибка чтения файла.")); };
+      reader.onload = () => { resolve(reader.result); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Преобразует base64 в Blob
+  function b64toBlob(b64Data, contentType='', sliceSize=512) {
+    const byteCharacters = atob(b64Data);
+    const byteArrays = [];
+    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+      const slice = byteCharacters.slice(offset, offset + sliceSize);
+      const byteNumbers = new Array(slice.length);
+      for (let i = 0; i < slice.length; i++) {
+        byteNumbers[i] = slice.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      byteArrays.push(byteArray);
+    }
+    return new Blob(byteArrays, { type: contentType });
+  }
+
+  // Получить CSRF токен: читаем hidden input, который вставляет {% csrf_token %}
+  function getCsrfTokenFromForm() {
+    const el = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (el) return el.value;
+    // fallback: пробуем из cookie
+    const match = document.cookie.match(/csrftoken=([^;]+)/);
+    return match ? match[1] : '';
+  }
+
+  // Отправить Blob на сервер через FormData (обычная обработка request.FILES на сервере)
+  async function sendBlobToServer(blob, filename, url='/upload/') {
+    const form = new FormData();
+    form.append('file', blob, filename);
+    const csrftoken = getCsrfTokenFromForm();
+    document.getElementById('status').innerText = 'Отправляю результат на сервер...';
+    const resp = await fetch(url, {
+      method: 'POST',
+      body: form,
+      credentials: 'same-origin',
+      headers: {
+        'X-CSRFToken': csrftoken
+      }
+    });
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(`Ошибка при отправке: ${resp.status} ${resp.statusText}\n${text}`);
+    }
+    const text = await resp.text();
+    document.getElementById('status').innerText = 'Результат успешно отправлен на сервер.';
+    return text;
+  }
+
+  // Переменные для хранения результата из Pyodide между шагами
+  let lastResultB64 = null;
+  let lastResultFilename = null;
+  let lastResultMime = 'application/octet-stream';
+
+  document.getElementById('local-form').addEventListener('submit', async (ev) => {
+    ev.preventDefault(); // не отправляем форму на сервер
+    const fileInput = document.getElementById('local-file');
+    const statusEl = document.getElementById('status');
+    const outputEl = document.getElementById('output');
+    outputEl.textContent = '';
+    document.getElementById('send-btn').style.display = 'none';
+    lastResultB64 = null;
+    lastResultFilename = null;
+
+    if (!fileInput.files || fileInput.files.length === 0) {
+      statusEl.innerText = 'Файл не выбран.';
+      return;
+    }
+    const file = fileInput.files[0];
+
+    try {
+      statusEl.innerText = 'Читаю файл...';
+      const dataUrl = await readFileAsDataURL(file);
+      const b64 = dataUrl.split(',', 2)[1]; // base64 часть
+
+      statusEl.innerText = 'Инициализирую pyodide...';
+      await initPyodideOnce();
+
+      statusEl.innerText = 'Передаю файл в Python и выполняю обработку локально...';
+
+      // Передаём base64 в Pyodide
+      pyodide.globals.set('b64data', b64);
+
+      // Здесь ваш Python-код: используйте file_bytes как bytes.
+      // ВАЖНО: В конце нужно установить переменные result_b64 (str, base64), result_filename (str) и result_mime (str)
+      // Ниже - пример кода: он просто возвращает неизменные байты (т.е. отправит на сервер оригинал),
+      // но замените блок внутри на вашу логику обработки файла.
+      const pythonUserCode = `
+import base64
+file_bytes = base64.b64decode(b64data)
+file_name = "${file.name}"
+file_mime = "${file.type}"
+
+# ---- ВСТАВЬТЕ СВОЙ PYTHON-КОД ЗДЕСЬ ----
+# Пример: простая "обработка" — добавление метки в начало файла (байтово)
+# Вы можете заменить этот код на любую логику.
+marker = b'--processed-by-pyodide--\\n'
+modified = marker + file_bytes
+# ---------------------------------------
+
+# Подготовка результата для передачи обратно в JS
+result_b64 = base64.b64encode(modified).decode('ascii')
+result_filename = file_name  # можно изменить, например file_name + '.processed'
+result_mime = file_mime or 'application/octet-stream'
+`;
+
+      await pyodide.runPythonAsync(pythonUserCode);
+
+      // Получаем результат
+      const out_b64 = pyodide.globals.get('result_b64');
+      const out_name = pyodide.globals.get('result_filename');
+      const out_mime = pyodide.globals.get('result_mime');
+
+      // Сохраняем для отправки
+      lastResultB64 = out_b64;
+      lastResultFilename = out_name;
+      lastResultMime = out_mime;
+
+      outputEl.textContent = `Результат локальной обработки готов.\nИмя: ${out_name}\nMIME: ${out_mime}\nРазмер (байт): ${Math.round((out_b64.length * 3) / 4)}`;
+      statusEl.innerText = 'Локальная обработка завершена. Можно отправить результат на сервер.';
+      document.getElementById('send-btn').style.display = 'inline-block';
+
+      // Очистка переменных Pyodide (по желанию)
+      pyodide.globals.delete('b64data');
+      pyodide.globals.delete('result_b64');
+      pyodide.globals.delete('result_filename');
+      pyodide.globals.delete('result_mime');
+
+    } catch (err) {
+      console.error(err);
+      statusEl.innerText = 'Ошибка: ' + String(err);
+    }
+  });
+
+  // Кнопка: отправить результат на сервер
+  document.getElementById('send-btn').addEventListener('click', async () => {
+    if (!lastResultB64 || !lastResultFilename) {
+      document.getElementById('status').innerText = 'Нет результата для отправки. Сначала выполните локальную обработку.';
+      return;
+    }
+    try {
+      const blob = b64toBlob(lastResultB64, lastResultMime);
+      const serverResponse = await sendBlobToServer(blob, lastResultFilename, '/upload/');
+      // Можно показать ответ сервера или перенаправить
+      document.getElementById('output').textContent += '\n\nОтвет сервера:\n' + serverResponse;
+    } catch (err) {
+      console.error(err);
+      document.getElementById('status').innerText = 'Ошибка при отправке: ' + String(err);
+    }
+  });
+</script>
 {% endblock %}
