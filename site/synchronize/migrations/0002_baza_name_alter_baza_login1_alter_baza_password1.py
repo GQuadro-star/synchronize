@@ -11,18 +11,18 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name='baza',
+            model_name='base',
             name='name',
             field=models.CharField(default=0, max_length=20),
             preserve_default=False,
         ),
         migrations.AlterField(
-            model_name='baza',
+            model_name='base',
             name='login1',
             field=models.CharField(max_length=20),
         ),
         migrations.AlterField(
-            model_name='baza',
+            model_name='base',
             name='password1',
             field=models.CharField(max_length=20),
         ),

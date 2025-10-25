@@ -11,12 +11,12 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RenameField(
-            model_name='baza',
+            model_name='base',
             old_name='login1',
             new_name='login',
         ),
         migrations.RenameField(
-            model_name='baza',
+            model_name='base',
             old_name='password1',
             new_name='password',
         ),
