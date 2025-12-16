@@ -30,7 +30,11 @@ pip install -r requirements.txt
 ```shell
 python init.py
 ```
-+ Запустить проект (из директории site)
++ Выполните миграции (из директории site)
+```shell
+python manage.py migrate
+```
++ Запустите проект (из директории site)
 ```shell
 python manage.py runserver
 ```
