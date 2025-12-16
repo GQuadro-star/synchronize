@@ -30,7 +30,7 @@ pip install -r requirements.txt
 ```shell
 python init.py
 ```
-+ Запустить проект (из директории synchronize)
++ Запустить проект (из директории site)
 ```shell
 python manage.py runserver
 ```
