@@ -23,5 +23,5 @@ if not allowed_hosts:
     if not allowed_hosts:
         allowed_hosts = "[]"
     else:
-        allowed_hosts = json.dumps(allowed_hosts)
+        allowed_hosts = json.dumps(allowed_hosts.split())
     set_key(".env", "ALLOWED_HOSTS", allowed_hosts)
