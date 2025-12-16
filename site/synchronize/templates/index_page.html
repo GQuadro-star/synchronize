@@ -149,7 +149,7 @@ modified = marker + file_bytes
 result_b64 = base64.b64encode(modified).decode('ascii')
 result_filename = file_name  # можно изменить, например file_name + '.processed'
 result_mime = file_mime or 'application/octet-stream'
-`;
+`; // TODO: Перенести это в файл
 
       await pyodide.runPythonAsync(pythonUserCode);
 
