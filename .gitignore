@@ -1,5 +1,9 @@
+.vscode
 .idea/
 venv/
 __pycache__/
+site/media/
+
 site/db.sqlite3
 .env
+nohup.out
