@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import os
+import json
 from pathlib import Path
 
 load_dotenv(dotenv_path="../.env")
@@ -13,7 +14,7 @@ MEDIA_URL = '/media/'
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = json.loads(os.environ["ALLOWED_HOSTS"])
 
 INSTALLED_APPS = [
     'django.contrib.admin',

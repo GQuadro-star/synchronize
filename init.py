@@ -1,5 +1,6 @@
 import os
 import secrets
+import json
 from dotenv import load_dotenv, set_key
 
 load_dotenv()
@@ -13,3 +14,14 @@ if not secret_key:
         secret_key = secrets.token_urlsafe(50)
     
     set_key(".env", "SECRET_KEY", secret_key)
+
+allowed_hosts = os.getenv("ALLOWED_HOSTS")
+
+if not allowed_hosts:
+    allowed_hosts = input("Введите разрешённые хосты (пропуск для пустого списка): ")
+    
+    if not allowed_hosts:
+        allowed_hosts = "[]"
+    else:
+        allowed_hosts = json.dumps(allowed_hosts)
+    set_key(".env", "ALLOWED_HOSTS", allowed_hosts)
