@@ -1,8 +1,12 @@
+from dotenv import load_dotenv
+import os
 from pathlib import Path
+
+load_dotenv(dotenv_path="../.env")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-lfw!y4^(=z4t*o(@fmhs-)cv19bl^bjh^hpkl(ls0b!*7aq+t^'
+SECRET_KEY = os.environ["SECRET_KEY"]
 
 MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL = '/media/'
