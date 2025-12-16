@@ -14,7 +14,11 @@ from django.conf import settings
 import os
 
 def index_page(request):
-    return render(request, 'index_page.html', {'page_name': 'Главная'})
+    context = {
+    "page_name": "Synchronize",
+    "menu_items": get_menu_items(),
+    }
+    return render(request, 'index_page.html', context)
 
 @require_http_methods(['GET', 'POST'])
 def upload_file(request):
@@ -37,3 +41,9 @@ def upload_file(request):
         # Вернём результат (JSON) или редирект/рендер шаблона — как вам удобнее
         return JsonResponse({'saved_path': saved_path, 'url': file_url, 'filename': unique_name})
     return redirect(reverse('index'))
+
+
+def get_menu_items():
+    return [
+        {"link": "/", "text": "Synchronize"},
+    ]
