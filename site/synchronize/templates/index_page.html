@@ -103,8 +103,8 @@
       const b64 = dataUrl.split(',')[1];
 
       await initPyodide();
-      await pyodide.loadPackage("micropip");          // сначала загружаем micropip
-      const micropip = pyodide.pyimport("micropip");  // импортируем его
+      await pyodide.loadPackage("micropip");
+      const micropip = pyodide.pyimport("micropip");
 
       await micropip.install("cryptography");
 
@@ -123,7 +123,7 @@ process_file(
   ${JSON.stringify(keyInput.value.trim())}
 )
   `)
-        .toJs(); // ← БЕЗ dict_converter
+        .toJs();
 
       const result_b64 = resultDict.get('result_b64');
       const result_filename = resultDict.get('result_filename');
