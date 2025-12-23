@@ -1,5 +1,5 @@
 {% extends 'base/base.html' %}
-
+{% load static %}
 {% block main %}
 <div class="osnova">
   <div class="px-4 py-5 my-5 text-center">
@@ -7,192 +7,172 @@
     <p>сервис для шифровки и расшифровки файлов (локально в браузере)</p>
   </div>
 
-  <p>Выберите файл для локальной обработки (файл сначала обрабатывается локально; затем можно отправить результат на сервер):</p>
+  <p>Выберите файл для локальной обработки (файл сначала обрабатывается локально; затем можно отправить результат на
+    сервер):</p>
 
   <form id="local-form">
     {% csrf_token %}
     <div class="mb-3">
+      <label for="encryption-key" class="form-label">Ключ шифрования</label>
+      <input type="password" class="form-control" id="encryption-key" name="key" required minlength="8">
+      <div class="form-text">Минимум 8 символов.</div>
+    </div>
+    <div class="mb-3">
       <input class="form-control" type="file" id="local-file" name="file" required>
     </div>
     <button type="submit" class="btn btn-primary" id="process-btn">Обработать локально</button>
-    <button type="button" class="btn btn-success" id="send-btn" style="display:none;margin-left:8px;">Отправить результат на сервер</button>
+    <button type="button" class="btn btn-success" id="send-btn" style="display:none;margin-left:8px;">Отправить
+      результат на сервер</button>
   </form>
 
   <div id="status" class="mt-3"></div>
   <pre id="output" class="mt-3" style="white-space:pre-wrap;"></pre>
 </div>
 
+<script>
+  const ENCRYPT_PY_URL = '{% static "scripts/encrypt.py" %}';
+</script>
+
 <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
 
 <script>
-  let pyodideReadyPromise = null;
-  async function initPyodideOnce() {
-    if (!pyodideReadyPromise) {
-      document.getElementById('status').innerText = 'Загружаю pyodide (Python в браузере)...';
-      pyodideReadyPromise = loadPyodide({indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/"});
-      window.pyodide = await pyodideReadyPromise;
-      document.getElementById('status').innerText = 'Pyodide загружен. Готово к локальной обработке.';
-    } else {
-      await pyodideReadyPromise;
+  let pyodide;
+  async function initPyodide() {
+    if (!pyodide) {
+      document.getElementById('status').innerText = 'Загружаю Pyodide...';
+      pyodide = await loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.23.4/full/' });
+      document.getElementById('status').innerText = 'Pyodide готов.';
     }
   }
 
-  function readFileAsDataURL(file) {
+  async function readFileAsDataURL(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onerror = () => { reader.abort(); reject(new DOMException("Ошибка чтения файла.")); };
-      reader.onload = () => { resolve(reader.result); };
+      reader.onerror = () => reject(new DOMException('Ошибка чтения файла.'));
+      reader.onload = () => resolve(reader.result);
       reader.readAsDataURL(file);
     });
   }
 
-  // Преобразует base64 в Blob
-  function b64toBlob(b64Data, contentType='', sliceSize=512) {
+  function b64toBlob(b64Data, contentType = '') {
     const byteCharacters = atob(b64Data);
     const byteArrays = [];
-    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-      const slice = byteCharacters.slice(offset, offset + sliceSize);
+    for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+      const slice = byteCharacters.slice(offset, offset + 512);
       const byteNumbers = new Array(slice.length);
       for (let i = 0; i < slice.length; i++) {
         byteNumbers[i] = slice.charCodeAt(i);
       }
-      const byteArray = new Uint8Array(byteNumbers);
-      byteArrays.push(byteArray);
+      byteArrays.push(new Uint8Array(byteNumbers));
     }
     return new Blob(byteArrays, { type: contentType });
   }
 
-  // Получить CSRF токен: читаем hidden input, который вставляет {% csrf_token %}
-  function getCsrfTokenFromForm() {
-    const el = document.querySelector('input[name="csrfmiddlewaretoken"]');
-    if (el) return el.value;
-    // fallback: пробуем из cookie
-    const match = document.cookie.match(/csrftoken=([^;]+)/);
-    return match ? match[1] : '';
+  function getCsrfToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
   }
-
-  // Отправить Blob на сервер через FormData (обычная обработка request.FILES на сервере)
-  async function sendBlobToServer(blob, filename, url='/upload/') {
-    const form = new FormData();
-    form.append('file', blob, filename);
-    const csrftoken = getCsrfTokenFromForm();
-    document.getElementById('status').innerText = 'Отправляю результат на сервер...';
-    const resp = await fetch(url, {
-      method: 'POST',
-      body: form,
-      credentials: 'same-origin',
-      headers: {
-        'X-CSRFToken': csrftoken
-      }
-    });
-    if (!resp.ok) {
-      const text = await resp.text();
-      throw new Error(`Ошибка при отправке: ${resp.status} ${resp.statusText}\n${text}`);
-    }
-    const text = await resp.text();
-    document.getElementById('status').innerText = 'Результат успешно отправлен на сервер.';
-    return text;
-  }
-
-  // Переменные для хранения результата из Pyodide между шагами
-  let lastResultB64 = null;
-  let lastResultFilename = null;
-  let lastResultMime = 'application/octet-stream';
 
   document.getElementById('local-form').addEventListener('submit', async (ev) => {
-    ev.preventDefault(); // не отправляем форму на сервер
+    ev.preventDefault();
     const fileInput = document.getElementById('local-file');
+    const keyInput = document.getElementById('encryption-key');
     const statusEl = document.getElementById('status');
     const outputEl = document.getElementById('output');
-    outputEl.textContent = '';
-    document.getElementById('send-btn').style.display = 'none';
-    lastResultB64 = null;
-    lastResultFilename = null;
+    const sendBtn = document.getElementById('send-btn');
 
-    if (!fileInput.files || fileInput.files.length === 0) {
+    outputEl.textContent = '';
+    sendBtn.style.display = 'none';
+
+    if (!fileInput.files[0]) {
       statusEl.innerText = 'Файл не выбран.';
       return;
     }
-    const file = fileInput.files[0];
+    if (!keyInput.value.trim()) {
+      statusEl.innerText = 'Ключ обязателен.';
+      return;
+    }
+    if (keyInput.value.length < 8) {
+      statusEl.innerText = 'Ключ должен быть от 8 символов.';
+      return;
+    }
 
     try {
       statusEl.innerText = 'Читаю файл...';
+      const file = fileInput.files[0];
       const dataUrl = await readFileAsDataURL(file);
-      const b64 = dataUrl.split(',', 2)[1]; // base64 часть
+      const b64 = dataUrl.split(',')[1];
 
-      statusEl.innerText = 'Инициализирую pyodide...';
-      await initPyodideOnce();
+      await initPyodide();
+      await pyodide.loadPackage("micropip");          // сначала загружаем micropip
+      const micropip = pyodide.pyimport("micropip");  // импортируем его
 
-      statusEl.innerText = 'Передаю файл в Python и выполняю обработку локально...';
+      await micropip.install("cryptography");
 
-      // Передаём base64 в Pyodide
+      statusEl.innerText = 'Загружаю encrypt.py...';
+      const encryptPyCode = await (await fetch(ENCRYPT_PY_URL)).text();
+      await pyodide.runPythonAsync(encryptPyCode);
+
       pyodide.globals.set('b64data', b64);
 
-      // Здесь ваш Python-код: используйте file_bytes как bytes.
-      // ВАЖНО: В конце нужно установить переменные result_b64 (str, base64), result_filename (str) и result_mime (str)
-      // Ниже - пример кода: он просто возвращает неизменные байты (т.е. отправит на сервер оригинал),
-      // но замените блок внутри на вашу логику обработки файла.
-      const pythonUserCode = `
-import base64
-file_bytes = base64.b64decode(b64data)
-file_name = "${file.name}"
-file_mime = "${file.type}"
+      const resultDict = pyodide
+        .runPython(`
+process_file(
+  b64data,
+  ${JSON.stringify(file.name)},
+  ${JSON.stringify(file.type)},
+  ${JSON.stringify(keyInput.value.trim())}
+)
+  `)
+        .toJs(); // ← БЕЗ dict_converter
 
-# ---- ВСТАВЬТЕ СВОЙ PYTHON-КОД ЗДЕСЬ ----
-# Пример: простая "обработка" — добавление метки в начало файла (байтово)
-# Вы можете заменить этот код на любую логику.
-marker = b'--processed-by-pyodide--\\n'
-modified = marker + file_bytes
-# ---------------------------------------
+      const result_b64 = resultDict.get('result_b64');
+      const result_filename = resultDict.get('result_filename');
+      const result_mime = resultDict.get('result_mime');
 
-# Подготовка результата для передачи обратно в JS
-result_b64 = base64.b64encode(modified).decode('ascii')
-result_filename = file_name  # можно изменить, например file_name + '.processed'
-result_mime = file_mime or 'application/octet-stream'
-`; // TODO: Перенести это в файл
 
-      await pyodide.runPythonAsync(pythonUserCode);
 
-      // Получаем результат
-      const out_b64 = pyodide.globals.get('result_b64');
-      const out_name = pyodide.globals.get('result_filename');
-      const out_mime = pyodide.globals.get('result_mime');
 
-      // Сохраняем для отправки
-      lastResultB64 = out_b64;
-      lastResultFilename = out_name;
-      lastResultMime = out_mime;
+      window.lastResult = { b64: result_b64, filename: result_filename, mime: result_mime };
 
-      outputEl.textContent = `Результат локальной обработки готов.\nИмя: ${out_name}\nMIME: ${out_mime}\nРазмер (байт): ${Math.round((out_b64.length * 3) / 4)}`;
-      statusEl.innerText = 'Локальная обработка завершена. Можно отправить результат на сервер.';
-      document.getElementById('send-btn').style.display = 'inline-block';
+      outputEl.textContent = `Готово.\nИмя: ${result_filename}\nMIME: ${result_mime}\nРазмер: ${Math.round((result_b64.length * 3) / 4)} байт`;
+      statusEl.innerText = 'Обработка завершена.';
+      sendBtn.style.display = 'inline-block';
 
-      // Очистка переменных Pyodide (по желанию)
       pyodide.globals.delete('b64data');
-      pyodide.globals.delete('result_b64');
-      pyodide.globals.delete('result_filename');
-      pyodide.globals.delete('result_mime');
 
     } catch (err) {
       console.error(err);
-      statusEl.innerText = 'Ошибка: ' + String(err);
+      statusEl.innerText = 'Ошибка: ' + (err.message || err);
     }
   });
 
-  // Кнопка: отправить результат на сервер
   document.getElementById('send-btn').addEventListener('click', async () => {
-    if (!lastResultB64 || !lastResultFilename) {
-      document.getElementById('status').innerText = 'Нет результата для отправки. Сначала выполните локальную обработку.';
+    if (!window.lastResult) {
+      document.getElementById('status').innerText = 'Сначала обработайте файл.';
       return;
     }
+
     try {
-      const blob = b64toBlob(lastResultB64, lastResultMime);
-      const serverResponse = await sendBlobToServer(blob, lastResultFilename, '/upload/');
-      // Можно показать ответ сервера или перенаправить
-      document.getElementById('output').textContent += '\n\nОтвет сервера:\n' + serverResponse;
+      const { b64, filename, mime } = window.lastResult;
+      const blob = b64toBlob(b64, mime);
+
+      const form = new FormData();
+      form.append('file', blob, filename);
+
+      document.getElementById('status').innerText = 'Отправляю...';
+      const resp = await fetch('/upload/', {
+        method: 'POST',
+        body: form,
+        headers: { 'X-CSRFToken': getCsrfToken() },
+        credentials: 'same-origin'
+      });
+
+      const text = await resp.text();
+      document.getElementById('output').textContent += '\n\n✅ Отправлено:\n' + text;
+      document.getElementById('status').innerText = 'Успешно отправлено.';
     } catch (err) {
       console.error(err);
-      document.getElementById('status').innerText = 'Ошибка при отправке: ' + String(err);
+      document.getElementById('status').innerText = 'Ошибка отправки: ' + (err.message || err);
     }
   });
 </script>
