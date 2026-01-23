@@ -40,7 +40,10 @@ def process_file(
     mode: str = "encrypt"
 ) -> Dict[str, str]:
 
-    result_mime = original_mime or 'application/octet-stream'
+    if mode == "encrypt":
+        result_mime = 'application/octet-stream'
+    else:
+        result_mime = original_mime or 'application/octet-stream'
 
     if mode == "encrypt":
         if isinstance(data, str):
