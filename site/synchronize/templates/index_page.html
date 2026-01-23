@@ -1,7 +1,10 @@
+<!DOCTYPE html>
 {% extends 'base/base.html' %}
 {% load static %}
 {% block main %}
-<div class="osnova">
+<link rel="stylesheet" href="{% static 'css/index_page.css' %}">
+
+<div class="base">
   <div class="px-4 py-5 my-5 text-center">
     <h1 class="title display-5 fw-bold">Synchronize</h1>
     <p>Сервис для шифровки и расшифровки файлов (локально в браузере)</p>
@@ -14,12 +17,11 @@
     <div class="mb-3">
       <label for="encryption-key" class="form-label">Ключ шифрования/расшифровки</label>
       <input type="password" class="form-control" id="encryption-key" name="key" required minlength="8">
-      <div style = "font-size: 1.3vh;">
+      <div style="font-size: 1.3vh;">
         Минимум 8 символов. Для расшифровки используйте тот же ключ, что и при шифровании.
       </div>
     </div>
     
-    <!-- Переключатель режимов -->
     <div class="mb-3">
       <div class="form-check form-check-inline">
         <input class="form-check-input" type="radio" name="mode" id="mode-encrypt" value="encrypt" checked>
@@ -29,7 +31,7 @@
         <input class="form-check-input" type="radio" name="mode" id="mode-decrypt" value="decrypt">
         <label class="form-check-label" for="mode-decrypt">Расшифровать</label>
       </div>
-      <div style = "font-size: 1.3vh;">
+      <div style="font-size: 1.3vh;">
         Файлы для расшифровки должны иметь расширение <code>.enc</code>
       </div>
     </div>
@@ -49,257 +51,9 @@
   <pre id="output" class="mt-3 bg-light p-3 rounded" style="white-space:pre-wrap; max-height:300px; overflow:auto;"></pre>
 </div>
 
-<style>
-  .osnova {
-    min-height: calc(100vh - 120px);
-    padding-bottom: 80px;
-    margin-bottom: 40px;
-  }
-  
-  footer {
-    position: static !important;
-    margin-top: 20px;
-  }
-  
-  [data-bs-theme="dark"] .form-control,
-  [data-bs-theme="dark"] input[type="password"],
-  [data-bs-theme="dark"] label,
-  [data-bs-theme="dark"] .form-text {
-    background-color: #1e1e1e !important;
-    color: #e0e0e0 !important;
-    border-color: #444 !important;
-  }
-  
-  [data-bs-theme="dark"] .alert {
-    color: #e0e0e0 !important;
-  }
-  
-  [data-bs-theme="dark"] .alert-secondary {
-    background-color: #2d2d2d !important;
-  }
-  
-  [data-bs-theme="dark"] .alert-success {
-    background-color: #1a3d1a !important;
-  }
-  
-  [data-bs-theme="dark"] .alert-info {
-    background-color: #1a2e3d !important;
-  }
-  
-  [data-bs-theme="dark"] .alert-warning {
-    background-color: #3d3d1a !important;
-  }
-  
-  [data-bs-theme="dark"] .alert-danger {
-    background-color: #3d1a1a !important;
-  }
-  
-  [data-bs-theme="dark"] pre {
-    background-color: #1e1e1e !important;
-    color: #e0e0e0 !important;
-  }
-  
-  .btn {
-    white-space: nowrap;
-    min-width: 120px;
-  }
-</style>
-
 <script>
-  const ENCRYPT_PY_URL = '{% static "scripts/encrypt.py" %}';
+  window.ENCRYPT_PY_URL = '{% static "scripts/encrypt.py" %}';
 </script>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
-<script>
-  let pyodide;
-  async function initPyodide() {
-    if (!pyodide) {
-      updateStatus('info', 'Загружаю Pyodide...');
-      pyodide = await loadPyodide({ 
-        indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.23.4/full/'
-      });
-      await pyodide.loadPackage("micropip");
-      const micropip = pyodide.pyimport("micropip");
-      await micropip.install("cryptography");
-      updateStatus('success', 'Pyodide готов');
-    }
-  }
-
-  function updateStatus(type, message) {
-    const el = document.getElementById('status');
-    el.textContent = message;
-    el.className = `mt-3 alert alert-${type}`;
-    
-    // Дополнительная фиксация для темной темы
-    if (document.documentElement.getAttribute('data-bs-theme') === 'dark') {
-      el.style.color = '#e0e0e0';
-      if (type === 'secondary') el.style.backgroundColor = '#2d2d2d';
-      if (type === 'success') el.style.backgroundColor = '#1a3d1a';
-      if (type === 'info') el.style.backgroundColor = '#1a2e3d';
-      if (type === 'warning') el.style.backgroundColor = '#3d3d1a';
-      if (type === 'danger') el.style.backgroundColor = '#3d1a1a';
-    }
-  }
-
-  async function readFileAsDataURL(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onerror = () => reject(new Error('Ошибка чтения файла.'));
-      reader.onload = () => resolve(reader.result.split(',')[1]);
-      reader.readAsDataURL(file);
-    });
-  }
-
-  function b64toBlob(b64Data, contentType = '') {
-    const byteCharacters = atob(b64Data);
-    const byteArrays = [];
-    for (let offset = 0; offset < byteCharacters.length; offset += 512) {
-      const slice = byteCharacters.slice(offset, offset + 512);
-      const byteNumbers = new Array(slice.length);
-      for (let i = 0; i < slice.length; i++) {
-        byteNumbers[i] = slice.charCodeAt(i);
-      }
-      byteArrays.push(new Uint8Array(byteNumbers));
-    }
-    return new Blob(byteArrays, { type: contentType });
-  }
-
-  function getCsrfToken() {
-    return document.querySelector('[name=csrfmiddlewaretoken]').value;
-  }
-
-  function downloadBlob(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 0);
-  }
-
-  // Обработка формы
-  document.getElementById('local-form').addEventListener('submit', async (ev) => {
-    ev.preventDefault();
-    const fileInput = document.getElementById('local-file');
-    const keyInput = document.getElementById('encryption-key');
-    const mode = document.querySelector('input[name="mode"]:checked').value;
-    const outputEl = document.getElementById('output');
-    const downloadBtn = document.getElementById('download-btn');
-    const sendBtn = document.getElementById('send-btn');
-
-    outputEl.textContent = '';
-    downloadBtn.style.display = 'none';
-    sendBtn.style.display = 'none';
-
-    // Валидация
-    if (!fileInput.files[0]) return updateStatus('danger', 'Выберите файл');
-    if (keyInput.value.length < 8) return updateStatus('danger', 'Ключ должен быть минимум 8 символов');
-
-    try {
-      updateStatus('warning', 'Читаю файл...');
-      const file = fileInput.files[0];
-      const b64data = await readFileAsDataURL(file);
-
-      await initPyodide();
-      
-      // Загружаем Python-скрипт
-      updateStatus('info', 'Загружаю модуль шифрования...');
-      const encryptPyCode = await (await fetch(ENCRYPT_PY_URL)).text();
-      await pyodide.runPythonAsync(encryptPyCode);
-
-      pyodide.globals.set('b64data', b64data);
-      
-      updateStatus('info', mode === 'encrypt' ? 'Шифрую...' : 'Расшифровываю...');
-      const resultDict = pyodide
-        .runPython(`
-process_file(
-  b64data,
-  ${JSON.stringify(file.name)},
-  ${JSON.stringify(file.type)},
-  ${JSON.stringify(keyInput.value.trim())},
-  ${JSON.stringify(mode)}
-)
-        `)
-        .toJs();
-
-      // Сохраняем результат
-      window.lastResult = {
-        b64: resultDict.get('result_b64'),
-        filename: resultDict.get('result_filename'),
-        mime: resultDict.get('result_mime'),
-        mode: resultDict.get('mode')
-      };
-
-      // Выводим информацию
-      const size = Math.round((window.lastResult.b64.length * 3) / 4);
-      outputEl.textContent = `✅ Успешно обработано!\n\nИмя: ${window.lastResult.filename}\nMIME: ${window.lastResult.mime}\nРазмер: ${size} байт`;
-      
-      updateStatus('success', 'Готово! Выберите действие с результатом');
-      downloadBtn.style.display = 'inline-block';
-      sendBtn.style.display = 'inline-block';
-
-    } catch (err) {
-      console.error(err);
-      updateStatus('danger', `Ошибка: ${err.message || err}`);
-    } finally {
-      pyodide?.globals.delete('b64data');
-    }
-  });
-
-  // Скачивание результата
-  document.getElementById('download-btn').addEventListener('click', () => {
-    if (!window.lastResult) return updateStatus('warning', 'Сначала обработайте файл');
-    
-    try {
-      const { b64, filename, mime } = window.lastResult;
-      const blob = b64toBlob(b64, mime);
-      downloadBlob(blob, filename);
-      updateStatus('success', `Файл "${filename}" сохранён на устройстве`);
-    } catch (err) {
-      console.error(err);
-      updateStatus('danger', `Ошибка скачивания: ${err.message || err}`);
-    }
-  });
-
-  // Отправка на сервер
-  document.getElementById('send-btn').addEventListener('click', async () => {
-    if (!window.lastResult) return updateStatus('warning', 'Сначала обработайте файл');
-
-    try {
-      const { b64, filename, mime, mode } = window.lastResult;
-      let finalFilename = filename;
-
-      // Для зашифрованных файлов сохраняем в формате {unique}.{ext}.enc
-      if (mode === 'encrypt') {
-        // Уже сгенерировано в Python
-      }
-
-      const blob = b64toBlob(b64, mime);
-
-      const formData = new FormData();
-      formData.append('file', blob, finalFilename);
-
-      updateStatus('info', 'Отправляю на сервер...');
-      const response = await fetch('/upload/', {
-        method: 'POST',
-        body: formData,
-        headers: { 'X-CSRFToken': getCsrfToken() },
-        credentials: 'same-origin'
-      });
-
-      if (!response.ok) throw new Error(await response.text());
-      
-      const resultText = await response.text();
-      document.getElementById('output').textContent += `\n\n📤 Отправлено:\n${resultText}`;
-      updateStatus('success', 'Файл успешно загружен на сервер');
-      
-    } catch (err) {
-      console.error(err);
-      updateStatus('danger', `Ошибка отправки: ${err.message || err}`);
-    }
-  });
-</script>
+<script src="{% static 'scripts/index_page_script.js' %}"></script>
 {% endblock %}
