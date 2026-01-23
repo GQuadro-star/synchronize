@@ -51,3 +51,7 @@ footer {
   white-space: nowrap;
   min-width: 120px;
 }
+
+.text_container {
+  font-size: 1.3vh;
+}

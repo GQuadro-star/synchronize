@@ -60,20 +60,19 @@ button:hover {
 .light {
 
     height:5vh;
-    display: inline-block
-    posirion: absolute;
+    display: inline-block;
+    position: absolute;
     right:0px
 }
 ul {
 display: inline-block ! important;
 }
-.navbar {
-}
+
 .navbar-toggler {
 width:10vh;
 display: inline-block;
 }
-.baton {
+.button {
 display: inline-block;
     width: 40%;
     text-align: right;
@@ -104,7 +103,7 @@ width:60%;
 .on {
  height: 10vh;
  width: 10vh;
- background-image: url('on.png');
+ background-image: url('../images/on.png');
  background-size: contain ;
  background-position: center center;
  transition: 0.25s ;
@@ -112,7 +111,7 @@ width:60%;
 .off {
 height: 10vh;
 width: 10vh;
-background-image: url('off.png');
+background-image: url('../images/off.png');
 background-size: contain ;
 background-position: center center;
 transition:  0.25s ;

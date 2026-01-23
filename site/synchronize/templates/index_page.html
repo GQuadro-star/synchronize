@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-{% extends 'base/base.html' %}
+{% extends "base/base.html" %}
 {% load static %}
 {% block main %}
-<link rel="stylesheet" href="{% static 'css/index_page.css' %}">
+<link rel="stylesheet" href="{% static "css/index_page.css" %}">
 
 <div class="base">
   <div class="px-4 py-5 my-5 text-center">
     <h1 class="title display-5 fw-bold">Synchronize</h1>
-    <p>Сервис для шифровки и расшифровки файлов (локально в браузере)</p>
+    <p>Сервис для шифрования и расшифровки файлов. Локально, прямо в вашем браузере</p>
   </div>
 
   <p>Выберите файл для локальной обработки:</p>
@@ -17,7 +17,7 @@
     <div class="mb-3">
       <label for="encryption-key" class="form-label">Ключ шифрования/расшифровки</label>
       <input type="password" class="form-control" id="encryption-key" name="key" required minlength="8">
-      <div style="font-size: 1.3vh;">
+      <div class="text_container">
         Минимум 8 символов. Для расшифровки используйте тот же ключ, что и при шифровании.
       </div>
     </div>
@@ -31,7 +31,7 @@
         <input class="form-check-input" type="radio" name="mode" id="mode-decrypt" value="decrypt">
         <label class="form-check-label" for="mode-decrypt">Расшифровать</label>
       </div>
-      <div style="font-size: 1.3vh;">
+      <div class="text_container">
         Файлы для расшифровки должны иметь расширение <code>.enc</code>
       </div>
     </div>
@@ -56,4 +56,4 @@
 </script>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
 <script src="{% static 'scripts/index_page_script.js' %}"></script>
-{% endblock %}
+{% endblock main %}
