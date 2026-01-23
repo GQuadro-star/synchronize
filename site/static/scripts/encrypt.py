@@ -1,61 +1,113 @@
 import base64
-import hashlib
 import time
-import random
-import string
+import secrets
+import os
+from typing import Dict, Union
 from cryptography.fernet import Fernet, InvalidToken
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-SYNC_SIGNATURE = b"SYNC_ENC_V1:"
+SYNC_SIGNATURE = b"SYNCHRONIZE_V1:"
+
+SALT_SIZE = 16
+KDF_ITERATIONS = 600_000
+KDF_ALGORITHM = hashes.SHA256()
+
 
 def generate_unique_name(original_filename: str) -> str:
-    """Генерирует уникальное имя в формате {random}.{ext}.enc"""
-    # Получаем оригинальное расширение
     ext = original_filename.split('.')[-1] if '.' in original_filename else 'bin'
-    # Генерируем уникальный префикс
-    prefix = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+    prefix = secrets.token_urlsafe(12)  # криптостойкий генератор
     timestamp = int(time.time())
     return f"{prefix}{timestamp}.{ext}.enc"
 
-def derive_key(raw_key: str) -> bytes:
-    digest = hashlib.sha256(raw_key.encode()).digest()
-    return base64.urlsafe_b64encode(digest)
 
-def process_file(b64data: str, original_filename: str, original_mime: str, key: str, mode: str = "encrypt"):
-    fernet = Fernet(derive_key(key))
+def _derive_key_from_password(password: str, salt: bytes) -> bytes:
+    kdf = PBKDF2HMAC(
+        algorithm=KDF_ALGORITHM,
+        length=32,
+        salt=salt,
+        iterations=KDF_ITERATIONS,
+    )
+    key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
+    return key
+
+
+def process_file(
+    data: Union[str, bytes],
+    original_filename: str,
+    original_mime: str,
+    password: str,
+    mode: str = "encrypt"
+) -> Dict[str, str]:
+
     result_mime = original_mime or 'application/octet-stream'
 
     if mode == "encrypt":
-        # Шифруем данные
-        encrypted_data = fernet.encrypt(b64data.encode())
-        payload = SYNC_SIGNATURE + base64.b64encode(encrypted_data)
+        if isinstance(data, str):
+            raw_data = base64.b64decode(data)
+        else:
+            raw_data = data
+
+        salt = os.urandom(SALT_SIZE)
+        key = _derive_key_from_password(password, salt)
+        fernet = Fernet(key)
+
+        # Шифруем
+        encrypted_data = fernet.encrypt(raw_data)
+
+        # Собираем payload: SYNC_ENC_V2:<base64(salt)>:<base64(encrypted)>
+        payload = (
+            SYNC_SIGNATURE + b":" +
+            base64.b64encode(salt) + b":" +
+            base64.b64encode(encrypted_data)
+        )
+
         result_b64 = base64.b64encode(payload).decode('ascii')
-        
-        # Генерируем уникальное имя (без оригинального названия)
         result_filename = generate_unique_name(original_filename)
 
     elif mode == "decrypt":
-        decoded_payload = base64.b64decode(b64data)
-        
-        if not decoded_payload.startswith(SYNC_SIGNATURE):
-            raise ValueError("Файл не является зашифрованным .enc")
-        
-        encrypted_b64 = decoded_payload[len(SYNC_SIGNATURE):]
-        encrypted_data = base64.b64decode(encrypted_b64)
-        
+        # Декодируем внешний base64
         try:
-            decrypted_b64 = fernet.decrypt(encrypted_data).decode()
+            decoded_payload = base64.b64decode(data)
+        except Exception as e:
+            raise ValueError("Неверный формат base64") from e
+
+        # Проверяем сигнатуру
+        if not decoded_payload.startswith(SYNC_SIGNATURE + b":"):
+            raise ValueError("Файл не является зашифрованным .enc (неверная сигнатура)")
+
+        parts = decoded_payload.split(b":", 2)
+        if len(parts) != 3:
+            raise ValueError("Повреждённая структура файла")
+
+        _, salt_b64, encrypted_b64 = parts
+
+        try:
+            salt = base64.b64decode(salt_b64)
+            encrypted_data = base64.b64decode(encrypted_b64)
+        except Exception as e:
+            raise ValueError("Неверное кодирование соли или данных") from e
+
+        # Восстанавливаем ключ
+        key = _derive_key_from_password(password, salt)
+        fernet = Fernet(key)
+
+        try:
+            raw_data = fernet.decrypt(encrypted_data)
         except InvalidToken:
-            raise ValueError("Неверный ключ расшифровки")
-        
-        result_b64 = decrypted_b64
-        # Удаляем .enc и сохраняем структуру {unique}.{ext}
+            raise ValueError("Неверный пароль или повреждённые данные")
+
+        # Возвращаем как base64-строку (как в оригинале)
+        result_b64 = base64.b64encode(raw_data).decode('ascii')
+
+        # Убираем .enc, если есть
         if original_filename.endswith('.enc'):
             result_filename = original_filename[:-4]
         else:
             result_filename = "decrypted_" + original_filename
 
     else:
-        raise ValueError("Неизвестный режим обработки")
+        raise ValueError("Неизвестный режим обработки: должен быть 'encrypt' или 'decrypt'")
 
     return {
         "result_b64": result_b64,
