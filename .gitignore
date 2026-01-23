@@ -7,3 +7,4 @@ site/media/
 site/db.sqlite3
 .env
 nohup.out
+.~lock.doc*
