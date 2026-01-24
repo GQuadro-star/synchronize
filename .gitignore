@@ -8,3 +8,5 @@ site/db.sqlite3
 .env
 nohup.out
 .~lock.*
+test.py
+js.json
