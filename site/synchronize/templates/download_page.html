@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+{% extends 'base/base.html' %}
+
+{% block main %}
+<div class="base">
+  <div class="px-4 py-5 my-5 text-center">
+    <h1 class="title display-5 fw-bold">Скачать файл</h1>
+    <p>Файл: <strong>{{ filename }}</strong></p>
+    <p>Размер: {{ file_size }} байт</p>
+    <div class="mt-4">
+      <a class="btn btn-primary" href="{{ download_url }}" download="{{ filename }}">
+        Скачать файл
+      </a>
+    </div>
+    <div class="mt-4 text_container">
+      <p>Прямая ссылка для скачивания:</p>
+      <div style="display: flex; gap: 10px; max-width: 600px; margin: 0 auto;">
+        <input type="text" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" 
+               value="{{ full_url }}" readonly id="link-input">
+        <button class="btn btn-outline-secondary" type="button" id="copy-link-btn" style="min-width: 100px;">
+          Копировать
+        </button>
+      </div>
+    </div>
+    <div class="mt-4">
+      <a class="btn btn-secondary" href="{% url 'index' %}">
+        Вернуться на главную
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('copy-link-btn').addEventListener('click', function() {
+  const linkInput = document.getElementById('link-input');
+  linkInput.select();
+  document.execCommand('copy');
+  
+  const originalText = this.innerHTML;
+  this.innerHTML = 'Скопировано!';
+  this.style.backgroundColor = '#28a745';
+  this.style.color = 'white';
+  
+  setTimeout(() => {
+    this.innerHTML = originalText;
+    this.style.backgroundColor = '';
+    this.style.color = '';
+  }, 2000);
+});
+</script>
+{% endblock %}

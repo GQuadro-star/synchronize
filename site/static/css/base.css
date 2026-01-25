@@ -10,8 +10,9 @@
 
 body {
     color: rgb(255, 255, 255);
-    margin: 0px
-    }
+    margin: 0px;
+    background-color: rgb(30, 31, 34);
+}
 .text
 {
     font-size: 2vh;
@@ -36,15 +37,18 @@ body {
     background-color: rgb(255 ,255 ,255);
     color: rgb(0 ,0 ,0)
 }
+
+
 a:focus, a:active, a:link {
     transform: scale(1);
-    transition:  0.1s ;
-    text-olign: center;
-  }
+    transition: 0.1s;
+    text-align: center;
+}
+
 a:hover {
     transform: scale(1.1);
-    transition:  0.1s ;
-    text-olign: center;
+    transition: 0.1s;
+    text-align: center;
 }
 
 

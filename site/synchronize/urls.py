@@ -6,6 +6,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('', views.index_page, name='index'),
     path('upload/', views.upload_file, name='upload'),
+    path('download/<str:filename>/', views.download_file, name='download_file'),
 ]
 
 if settings.DEBUG:

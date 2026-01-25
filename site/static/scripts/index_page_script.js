@@ -150,31 +150,45 @@ process_file(
     });
 
     document.getElementById('send-btn').addEventListener('click', async () => {
-        if (!lastResult) return updateStatus('warning', 'Сначала обработайте файл');
+    if (!lastResult) return updateStatus('warning', 'Сначала обработайте файл');
 
-        try {
-            const { b64, filename, mime, mode } = lastResult;
-            const blob = b64toBlob(b64, mime);
-            const formData = new FormData();
-            formData.append('file', blob, filename);
+    try {
+        const { b64, filename, mime, mode } = lastResult;
+        const blob = b64toBlob(b64, mime);
+        const formData = new FormData();
+        formData.append('file', blob, filename);
 
-            updateStatus('info', 'Отправляю на сервер...');
-            const response = await fetch('/upload/', {
-                method: 'POST',
-                body: formData,
-                headers: { 'X-CSRFToken': getCsrfToken() },
-                credentials: 'same-origin'
-            });
+        updateStatus('info', 'Отправляю на сервер...');
+        const response = await fetch('/upload/', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRFToken': getCsrfToken() },
+            credentials: 'same-origin'
+        });
 
-            if (!response.ok) throw new Error(await response.text());
+        if (!response.ok) throw new Error(await response.text());
 
-            const resultText = await response.text();
-            document.getElementById('output').textContent += `\n\n📤 Отправлено:\n${resultText}`;
-            updateStatus('success', 'Файл успешно загружен на сервер');
+        const result = await response.json();
+        const downloadLink = `${window.location.origin}${result.download_url}`;
+        
+        let outputText = `✅ Файл успешно загружен на сервер\n`;
+        outputText += `📁 Имя: ${result.filename}\n`;
+        outputText += `🔗 Ссылка для скачивания: <a href="${downloadLink}" target="_blank">${downloadLink}</a>\n`;
+        outputText += `💡 Вы можете скачать файл по этой ссылке или поделиться ею`;
 
-        } catch (err) {
-            console.error(err);
-            updateStatus('danger', `Ошибка отправки: ${err.message || err}`);
-        }
-    });
-});
+        document.getElementById('output').innerHTML = outputText;
+        updateStatus('success', 'Файл успешно загружен! Ссылка для скачивания доступна ниже');
+        
+        // Добавляем кнопку для перехода на страницу скачивания
+        const downloadPageBtn = document.createElement('button');
+        downloadPageBtn.className = 'btn btn-success mt-3';
+        downloadPageBtn.innerHTML = 'Перейти на страницу скачивания';
+        downloadPageBtn.onclick = () => window.location.href = downloadLink;
+        
+        document.querySelector('.base').appendChild(downloadPageBtn);
+
+    } catch (err) {
+        console.error(err);
+        updateStatus('danger', `Ошибка отправки: ${err.message || err}`);
+    }
+});})
