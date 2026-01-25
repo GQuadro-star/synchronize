@@ -1,0 +1,125 @@
+@font-face {
+    font-family: 'Mind Control';
+    src: url('fonts/mind-control.woff2') format('woff2'),
+         url('fonts/mind-control.woff') format('woff'),
+         url('fonts/mind-control.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+body {
+    color: rgb(255, 255, 255);
+    margin: 0px;
+    background-color: rgb(30, 31, 34);
+}
+.text
+{
+    font-size: 2vh;
+    font-family: Calibri;
+    font-weight: bold;
+}
+.title{
+    font-size: 6vh;
+    font-family: Calibri;
+    font-weight: bold;
+    font-style: oblique;
+}
+.black
+{
+    transition-duration: 0.25s;
+    background-color: rgb(30 ,31 ,34);
+    color: rgb(255 ,255 ,255)
+}
+.white
+{
+    transition-duration: 0.25s;
+    background-color: rgb(255 ,255 ,255);
+    color: rgb(0 ,0 ,0)
+}
+
+
+a:focus, a:active, a:link {
+    transform: scale(1);
+    transition: 0.1s;
+    text-align: center;
+}
+
+a:hover {
+    transform: scale(1.1);
+    transition: 0.1s;
+    text-align: center;
+}
+
+
+button:focus, button:active, button:link {
+    transform: scale(1);
+    transition:  0.1s ;
+  }
+button:hover {
+    transform: scale(1.1);
+    transition:  0.1s ;
+}
+
+.light {
+
+    height:5vh;
+    display: inline-block;
+    position: absolute;
+    right:0px
+}
+ul {
+display: inline-block ! important;
+}
+
+.navbar-toggler {
+width:10vh;
+display: inline-block;
+}
+.button {
+display: inline-block;
+    width: 40%;
+    text-align: right;
+    position: relative;
+    right: -10px;
+}
+.container-fluid {
+width:60%;
+}
+.ftw{
+    background-color: #000000;
+    border-top: 1px solid #FFFFFF;
+    clear: both;
+    color: #FFFFFF;
+    font-size: 2vh;
+    height: 16vh;
+    line-height: 19px;
+    padding-top: 4px;
+    position: absolute;
+    bottom: 0;
+    left:0;
+    width: 100%;
+    direction: rtl;
+    font-family: tahoma;
+    font-size: 13px;
+    text-align: center;
+}
+.on {
+ height: 10vh;
+ width: 10vh;
+ background-image: url('../images/on.png');
+ background-size: contain ;
+ background-position: center center;
+ transition: 0.25s ;
+}
+.off {
+height: 10vh;
+width: 10vh;
+background-image: url('../images/off.png');
+background-size: contain ;
+background-position: center center;
+transition:  0.25s ;
+}
+pre {
+background-100vh:
+}
