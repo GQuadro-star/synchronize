@@ -5,13 +5,19 @@ document.addEventListener('DOMContentLoaded', () => {
     async function initPyodide() {
         if (!pyodide) {
             updateStatus('info', 'Загружаю Pyodide...');
-            pyodide = await loadPyodide({
-                indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.23.4/full/'
-            });
-            await pyodide.loadPackage("micropip");
-            const micropip = pyodide.pyimport("micropip");
-            await micropip.install("cryptography");
-            updateStatus('success', 'Pyodide готов');
+            try {
+                pyodide = await loadPyodide({
+                    indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.23.4/full/'
+                });
+                await pyodide.loadPackage("micropip");
+                const micropip = pyodide.pyimport("micropip");
+                await micropip.install("cryptography");
+                updateStatus('success', 'Pyodide готов');
+            } catch (err) {
+                console.error('Ошибка загрузки Pyodide:', err);
+                updateStatus('danger', 'Ошибка загрузки Pyodide: ' + err.message);
+                throw err;
+            }
         }
     }
 
@@ -54,7 +60,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getCsrfToken() {
-        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const csrfCookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
+        if (csrfCookie) {
+            return csrfCookie.split('=')[1];
+        }
+
+        const csrfElement = document.querySelector('meta[name="csrf-token"]');
+        if (csrfElement) {
+            return csrfElement.getAttribute('content');
+        }
+
+        const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfInput) {
+            return csrfInput.value;
+        }
+
+        return '';
     }
 
     function downloadBlob(blob, filename) {
@@ -150,45 +171,55 @@ process_file(
     });
 
     document.getElementById('send-btn').addEventListener('click', async () => {
-    if (!lastResult) return updateStatus('warning', 'Сначала обработайте файл');
+        if (!lastResult) return updateStatus('warning', 'Сначала обработайте файл');
 
-    try {
-        const { b64, filename, mime, mode } = lastResult;
-        const blob = b64toBlob(b64, mime);
-        const formData = new FormData();
-        formData.append('file', blob, filename);
+        try {
+            const { b64, filename, mime, mode } = lastResult;
+            const blob = b64toBlob(b64, mime);
+            const formData = new FormData();
+            formData.append('file', blob, filename);
 
-        updateStatus('info', 'Отправляю на сервер...');
-        const response = await fetch('/upload/', {
-            method: 'POST',
-            body: formData,
-            headers: { 'X-CSRFToken': getCsrfToken() },
-            credentials: 'same-origin'
-        });
+            updateStatus('info', 'Отправляю на сервер...');
 
-        if (!response.ok) throw new Error(await response.text());
+            // Получаем CSRF токен
+            const csrfToken = getCsrfToken();
 
-        const result = await response.json();
-        const downloadLink = `${window.location.origin}${result.download_url}`;
-        
-        let outputText = `✅ Файл успешно загружен на сервер\n`;
-        outputText += `📁 Имя: ${result.filename}\n`;
-        outputText += `🔗 Ссылка для скачивания: <a href="${downloadLink}" target="_blank">${downloadLink}</a>\n`;
-        outputText += `💡 Вы можете скачать файл по этой ссылке или поделиться ею`;
+            const response = await fetch('/upload/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': csrfToken
+                },
+                credentials: 'same-origin'
+            });
 
-        document.getElementById('output').innerHTML = outputText;
-        updateStatus('success', 'Файл успешно загружен! Ссылка для скачивания доступна ниже');
-        
-        // Добавляем кнопку для перехода на страницу скачивания
-        const downloadPageBtn = document.createElement('button');
-        downloadPageBtn.className = 'btn btn-success mt-3';
-        downloadPageBtn.innerHTML = 'Перейти на страницу скачивания';
-        downloadPageBtn.onclick = () => window.location.href = downloadLink;
-        
-        document.querySelector('.base').appendChild(downloadPageBtn);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
 
-    } catch (err) {
-        console.error(err);
-        updateStatus('danger', `Ошибка отправки: ${err.message || err}`);
-    }
-});})
+            const result = await response.json();
+            const downloadLink = `${window.location.origin}${result.download_url}`;
+
+            let outputText = `✅ Файл успешно загружен на сервер\n`;
+            outputText += `📁 Имя: ${result.filename}\n`;
+            outputText += `🔗 Ссылка для скачивания: <a href="${downloadLink}" target="_blank">${downloadLink}</a>\n`;
+            outputText += `💡 Вы можете скачать файл по этой ссылке или поделиться ею`;
+
+            document.getElementById('output').innerHTML = outputText;
+            updateStatus('success', 'Файл успешно загружен! Ссылка для скачивания доступна ниже');
+
+            // Добавляем кнопку для перехода на страницу скачивания
+            const downloadPageBtn = document.createElement('button');
+            downloadPageBtn.className = 'btn btn-success mt-3';
+            downloadPageBtn.innerHTML = 'Перейти на страницу скачивания';
+            downloadPageBtn.onclick = () => window.location.href = downloadLink;
+
+            document.querySelector('.base').appendChild(downloadPageBtn);
+
+        } catch (err) {
+            console.error('Ошибка отправки:', err);
+            updateStatus('danger', `Ошибка отправки: ${err.message || err}`);
+        }
+    });
+})
