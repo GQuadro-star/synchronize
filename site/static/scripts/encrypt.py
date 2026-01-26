@@ -56,10 +56,8 @@ def process_file(
         
         encrypted_data = fernet.encrypt(raw_data)
         
-        # Формируем payload в бинарном виде
         payload = SYNC_SIGNATURE + salt + encrypted_data
         
-        # Кодируем ВЕСЬ payload в base64 для сохранения
         result_b64 = base64.b64encode(payload).decode('ascii')
         result_filename = generate_unique_name(original_filename)
         
@@ -71,17 +69,14 @@ def process_file(
         except Exception as e:
             raise ValueError(f"Ошибка декодирования base64: {str(e)}")
         
-        # Проверяем сигнатуру
         if not decoded_payload.startswith(SYNC_SIGNATURE):
             preview = decoded_payload[:20]
             raise ValueError(f"Неверная сигнатура файла. Данные начинаются с: {preview.hex()}")
         
-        # Извлекаем соль и зашифрованные данные
         salt_start = len(SYNC_SIGNATURE)
         salt = decoded_payload[salt_start:salt_start + SALT_SIZE]
         encrypted_data = decoded_payload[salt_start + SALT_SIZE:]
         
-        # Создаем ключ и расшифровываем
         key = _derive_key_from_password(password, salt)
         fernet = Fernet(key)
         
@@ -105,3 +100,4 @@ def process_file(
         "result_mime": result_mime,
         "mode": mode
     }
+    
