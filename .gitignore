@@ -3,7 +3,8 @@
 venv/
 __pycache__/
 site/media/
-site/staticfiles/*
+site/staticfiles/
+site/synchronize/migrations/
 
 site/db.sqlite3
 .env
