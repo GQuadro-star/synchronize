@@ -1,5 +1,5 @@
 django==4.2.27
-python-dotenv==1.2.1
-whitenoise==6.11.0
-gunicorn==24.1.1
+python-dotenv==1.0.1
+whitenoise==6.7.0
+gunicorn==23.0.0
 pyopenssl==25.3.0
