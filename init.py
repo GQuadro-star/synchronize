@@ -21,7 +21,6 @@ if not allowed_hosts:
     allowed_hosts = input("Введите разрешённые хосты (пропуск для пустого списка): ")
     
     if not allowed_hosts:
-        allowed_hosts = "[]"
-    else:
-        allowed_hosts = json.dumps(allowed_hosts.split())
+        allowed_hosts = ""
+
     set_key(".env", "ALLOWED_HOSTS", allowed_hosts)
