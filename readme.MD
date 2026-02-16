@@ -3,5 +3,5 @@
 
 ## Подробнее о проекте
 [Сайт](https://synchronize.quadrotez.com)  
-[Презентация](https://nextcloud.quadrotez.com/s/2JKGPf3PbLMNQSK)  
-[Документация](https://nextcloud.quadrotez.com/s/HnrraRiN6QyR965)
+[Презентация](https://nextcloud.quadrotez.com/s/HnrraRiN6QyR965)  
+[Документация](https://nextcloud.quadrotez.com/s/2JKGPf3PbLMNQSK)
