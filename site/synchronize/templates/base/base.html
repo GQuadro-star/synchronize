@@ -14,7 +14,7 @@
           rel="stylesheet">
     <title>{{ page_name }}</title>
   </head>
-  <body class="container black text", id="bd">
+  <body class="container black text" id="bd" data-bs-theme="dark">
     <header>
       {% include 'base/menu.html' %}
     </header>
@@ -36,7 +36,8 @@ if(body.classList.contains('black'))
   lapm.classList.remove("on");
   lapm.classList.add("off");
   body.classList.remove("black");
-body.classList.add("white");
+  body.classList.add("white");
+  body.setAttribute('data-bs-theme', 'light');
 }
 else
 {
@@ -44,6 +45,7 @@ lapm.classList.remove("off");
 lapm.classList.add("on");
 body.classList.remove("white");
 body.classList.add("black");
+body.setAttribute('data-bs-theme', 'dark');
 }
 console.log(body.class)
 }

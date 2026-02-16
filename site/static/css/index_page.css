@@ -47,6 +47,18 @@ footer {
   color: #e0e0e0 !important;
 }
 
+[data-bs-theme="light"] pre {
+  background-color: #f8f9fa !important;
+  color: #212529 !important;
+}
+
+[data-bs-theme="light"] .form-control,
+[data-bs-theme="light"] input[type="password"] {
+  background-color: #ffffff !important;
+  color: #212529 !important;
+  border-color: #dee2e6 !important;
+}
+
 .btn {
   white-space: nowrap;
   min-width: 120px;
