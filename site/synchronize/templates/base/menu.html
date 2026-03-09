@@ -1,23 +1,31 @@
 <!DOCTYPE html>
 <nav class="navbar navbar-expand-lg">
   <div class="container-fluid">
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
       <div class="menu_items">
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        {% for menu_item in menu_items %}
-          <li class="nav-item">
-            <a class="nav-link text-reset" href="{{ menu_item.link }}">{{ menu_item.text }}</a>
-          </li>
-        {% endfor %}
-
-      </ul>
-        </div>
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          {% for menu_item in menu_items %}
+            <li class="nav-item">
+              <a class="nav-link text-reset" href="{{ menu_item.link }}">{{ menu_item.text }}</a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
     </div>
   </div>
-  <div class="button">
-  <button class="btn text-reset mt-2"  onclick="light()" type="submit">
-<div class="on" id="light"></div>
-  </button>
+  <div class="nav-controls">
+    <button class="lamp-btn" onclick="light()" type="button" title="Переключить тему">
+      <div class="on" id="light"></div>
+    </button>
+    <div class="theme-picker">
+      <button class="theme-dot active" data-theme="default" onclick="setTheme('default')" title="Стандарт"></button>
+      <button class="theme-dot" data-theme="ocean"   onclick="setTheme('ocean')"   title="Океан"></button>
+      <button class="theme-dot" data-theme="forest"  onclick="setTheme('forest')"  title="Лес"></button>
+      <button class="theme-dot" data-theme="sunset"  onclick="setTheme('sunset')"  title="Закат"></button>
+      <button class="theme-dot" data-theme="neon"    onclick="setTheme('neon')"    title="Неон"></button>
+    </div>
   </div>
 </nav>
