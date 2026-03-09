@@ -21,6 +21,6 @@ if not allowed_hosts:
     allowed_hosts = input("Введите разрешённые хосты (пропуск для пустого списка): ")
     
     if not allowed_hosts:
-        allowed_hosts = ""
+        allowed_hosts = "127.0.0.1 localhost"
 
     set_key(".env", "ALLOWED_HOSTS", allowed_hosts)
