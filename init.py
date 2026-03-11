@@ -24,3 +24,16 @@ if not allowed_hosts:
         allowed_hosts = "127.0.0.1 localhost"
 
     set_key(".env", "ALLOWED_HOSTS", allowed_hosts)
+
+csrf_trusted_origins = os.getenv("CSRF_TRUSTED_ORIGINS")
+
+if not csrf_trusted_origins:
+    print("\nCSRF_TRUSTED_ORIGINS — список доменов, с которых разрешены POST-запросы.")
+    print("Нужно если сайт работает за реверс-прокси (nginx) с HTTPS.")
+    print("Пример: https://example.com https://www.example.com")
+    csrf_trusted_origins = input("Введите доверенные origins (пропуск для локальной разработки): ")
+
+    if not csrf_trusted_origins:
+        csrf_trusted_origins = "http://127.0.0.1 http://localhost"
+
+    set_key(".env", "CSRF_TRUSTED_ORIGINS", csrf_trusted_origins)
