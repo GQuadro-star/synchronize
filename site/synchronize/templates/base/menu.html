@@ -17,15 +17,27 @@
     </div>
   </div>
   <div class="nav-controls">
-    <button class="lamp-btn" onclick="light()" type="button" title="Переключить тему">
+    <button class="lamp-btn" onclick="light()" type="button" title="Переключить режим">
       <div class="on" id="light"></div>
     </button>
-    <div class="theme-picker">
-      <button class="theme-dot active" data-theme="default" onclick="setTheme('default')" title="Стандарт"></button>
-      <button class="theme-dot" data-theme="ocean"   onclick="setTheme('ocean')"   title="Океан"></button>
-      <button class="theme-dot" data-theme="forest"  onclick="setTheme('forest')"  title="Лес"></button>
-      <button class="theme-dot" data-theme="sunset"  onclick="setTheme('sunset')"  title="Закат"></button>
-      <button class="theme-dot" data-theme="neon"    onclick="setTheme('neon')"    title="Неон"></button>
+    <div class="palette-wrap" id="paletteWrap">
+      <button class="palette-btn" onclick="togglePalette()" type="button" title="Выбор темы" aria-expanded="false" id="paletteBtn">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <circle cx="8.5"  cy="9"    r="1.5" fill="currentColor" stroke="none"/>
+          <circle cx="15.5" cy="9"    r="1.5" fill="currentColor" stroke="none"/>
+          <circle cx="7"    cy="14"   r="1.5" fill="currentColor" stroke="none"/>
+          <circle cx="12"   cy="16"   r="1.5" fill="currentColor" stroke="none"/>
+          <circle cx="17"   cy="14"   r="1.5" fill="currentColor" stroke="none"/>
+        </svg>
+      </button>
+      <div class="theme-picker" id="themePicker" aria-hidden="true">
+        <button class="theme-dot active" data-theme="default" onclick="setTheme('default')" title="Стандарт"></button>
+        <button class="theme-dot" data-theme="ocean"   onclick="setTheme('ocean')"   title="Океан"></button>
+        <button class="theme-dot" data-theme="forest"  onclick="setTheme('forest')"  title="Лес"></button>
+        <button class="theme-dot" data-theme="sunset"  onclick="setTheme('sunset')"  title="Закат"></button>
+        <button class="theme-dot" data-theme="neon"    onclick="setTheme('neon')"    title="Неон"></button>
+      </div>
     </div>
   </div>
 </nav>

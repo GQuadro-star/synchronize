@@ -12,6 +12,13 @@ DEBUG = False
 
 ALLOWED_HOSTS = os.environ["ALLOWED_HOSTS"].split()
 
+# Нужно для работы за реверс-прокси (nginx + SSL).
+# В .env добавьте: CSRF_TRUSTED_ORIGINS=https://ваш-домен.com
+CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "").split()
+
+# Сообщает Django, что HTTPS пришёл через прокси
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',

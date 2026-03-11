@@ -82,7 +82,26 @@
         document.querySelectorAll('.theme-dot').forEach(function(dot) {
           dot.classList.toggle('active', dot.getAttribute('data-theme') === theme);
         });
+        closePalette();
       }
+
+      function togglePalette() {
+        var wrap = document.getElementById('paletteWrap');
+        var btn  = document.getElementById('paletteBtn');
+        var open = wrap.classList.toggle('open');
+        btn.setAttribute('aria-expanded', open);
+      }
+
+      function closePalette() {
+        var wrap = document.getElementById('paletteWrap');
+        var btn  = document.getElementById('paletteBtn');
+        if (wrap) { wrap.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); }
+      }
+
+      document.addEventListener('click', function(e) {
+        var wrap = document.getElementById('paletteWrap');
+        if (wrap && !wrap.contains(e.target)) { closePalette(); }
+      });
 
       (function() {
         var savedMode  = localStorage.getItem('sync-mode')  || 'dark';

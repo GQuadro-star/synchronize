@@ -176,13 +176,17 @@ process_file(
         try {
             const { b64, filename, mime, mode } = lastResult;
             const blob = b64toBlob(b64, mime);
+            // Получаем CSRF токен до создания FormData
+            const csrfToken = getCsrfToken();
+
             const formData = new FormData();
             formData.append('file', blob, filename);
+            // Дублируем токен в теле запроса — запасной вариант если заголовок блокируется прокси
+            if (csrfToken) {
+                formData.append('csrfmiddlewaretoken', csrfToken);
+            }
 
             updateStatus('info', 'Отправляю на сервер...');
-
-            // Получаем CSRF токен
-            const csrfToken = getCsrfToken();
 
             const response = await fetch('/upload/', {
                 method: 'POST',
