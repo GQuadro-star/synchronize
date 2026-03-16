@@ -25,15 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const el = document.getElementById('status');
         el.textContent = message;
         el.className = `mt-3 alert alert-${type}`;
-
-        if (document.documentElement.getAttribute('data-bs-theme') === 'dark') {
-            el.style.color = '#e0e0e0';
-            if (type === 'secondary') el.style.backgroundColor = '#2d2d2d';
-            if (type === 'success') el.style.backgroundColor = '#1a3d1a';
-            if (type === 'info') el.style.backgroundColor = '#1a2e3d';
-            if (type === 'warning') el.style.backgroundColor = '#3d3d1a';
-            if (type === 'danger') el.style.backgroundColor = '#3d1a1a';
-        }
     }
 
     async function readFileAsDataURL(file) {
@@ -91,7 +82,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 0);
     }
 
-    // Инициализация обработчиков
     document.getElementById('local-form').addEventListener('submit', async (ev) => {
         ev.preventDefault();
         const fileInput = document.getElementById('local-file');
@@ -176,12 +166,10 @@ process_file(
         try {
             const { b64, filename, mime, mode } = lastResult;
             const blob = b64toBlob(b64, mime);
-            // Получаем CSRF токен до создания FormData
             const csrfToken = getCsrfToken();
 
             const formData = new FormData();
             formData.append('file', blob, filename);
-            // Дублируем токен в теле запроса — запасной вариант если заголовок блокируется прокси
             if (csrfToken) {
                 formData.append('csrfmiddlewaretoken', csrfToken);
             }
@@ -213,7 +201,6 @@ process_file(
             document.getElementById('output').innerHTML = outputText;
             updateStatus('success', 'Файл успешно загружен! Ссылка для скачивания доступна ниже');
 
-            // Добавляем кнопку для перехода на страницу скачивания
             const downloadPageBtn = document.createElement('button');
             downloadPageBtn.className = 'btn btn-success mt-3';
             downloadPageBtn.innerHTML = 'Перейти на страницу скачивания';
